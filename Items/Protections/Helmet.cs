@@ -1,10 +1,8 @@
-using primerasPruebasConC.Items.Protecions;
-
-namespace primerasPruebasConC.Items.Protections
+namespace primerasPruebasConC1._0.Items.Protections
 {
     public class Helmet : Protection
     {
-        public Helmet() : base("Helmet", 5)
+        public Helmet(string name, int armor) : base(name, armor)
         {
         }
 
@@ -12,6 +10,11 @@ namespace primerasPruebasConC.Items.Protections
         {
             Console.WriteLine($"{character.Name} equipa un casco que aumenta la armadura en {Armor}.");
             character.BaseArmour += Armor;
+        }
+
+        public override string ToString()
+        {
+            return $"{Name} - Armadura: {Armor}";
         }
     }
 }

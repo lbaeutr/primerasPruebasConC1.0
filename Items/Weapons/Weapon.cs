@@ -1,4 +1,4 @@
-namespace primerasPruebasConC.Items.Weapons
+namespace primerasPruebasConC1._0.Items.Weapons
 {
     public abstract class Weapon : IItem
     {

@@ -1,8 +1,9 @@
-using primerasPruebasConC.Items.Protecions;
-using primerasPruebasConC.Items.Weapons;
-using primerasPruebasConC.Items;
+using primerasPruebasConC1._0.Items;
+using primerasPruebasConC1._0.Items.Protections;
+using primerasPruebasConC1._0.Items.Weapons;
+using primerasPruebasConC1._0.Subditos;
 
-namespace primerasPruebasConC
+namespace primerasPruebasConC1._0
 {
     public class Character
     {
@@ -11,33 +12,61 @@ namespace primerasPruebasConC
         public int CurrentHitPoints { get; set; }
         public int BaseDamage { get; set; }
         public int BaseArmour { get; set; }
+
+        private Weapon _equippedWeapon;
         private List<IItem> _inventory;
+        private List<SupportingCharacters> _minions = new List<SupportingCharacters>();
+
+        public delegate int MinionDelegate();
+        /*
+         * Se define para apuntar a metodos que devuelven un INT
+         * en este cso atack y receiveAttack
+         */
+
 
         public Character(string name, int maxHitPoints, int baseDamage, int baseArmour)
         {
             Name = name;
             MaxHitPoints = maxHitPoints;
-            CurrentHitPoints = maxHitPoints; 
+            CurrentHitPoints = maxHitPoints;
             BaseDamage = baseDamage;
             BaseArmour = baseArmour;
             _inventory = new List<IItem>();
         }
 
-        public int Attack()
+
+        // Propiedad de solo lectura para el arma equipada.
+        public Weapon EquippedWeapon
+        {
+            get => _equippedWeapon;
+            set => EquipWeapon(value);
+        }
+
+        private void EquipWeapon(Weapon weapon) // Metodo para equipar un arma.
+        {
+            if (weapon != null)
+            {
+                _equippedWeapon = weapon;
+                Console.WriteLine($"{Name} ha equipado {weapon.Name}, que añade {weapon.Damage} de daño.");
+            }
+        }
+
+        public int CalculateTotalDamage() //Calcula el dano considerando el tipo de arma
         {
             int totalDamage = BaseDamage;
 
-            // Recorrer el inventario y sumar el daño de las armas equipadas
-            foreach (var item in _inventory)
+            if (EquippedWeapon != null)
             {
-                if (item is Weapon weapon)
-                {
-                    totalDamage += weapon.Damage;
-                }
+                totalDamage += EquippedWeapon.Damage;
             }
 
-            Console.WriteLine($"{Name} ataca con {totalDamage} de daño.");
             return totalDamage;
+        }
+
+        public void Attack()
+        {
+            int totalDamage = CalculateTotalDamage();
+            Console.WriteLine($"{Name} ataca con {totalDamage} de daño.");
         }
 
         public int Defense()
@@ -59,6 +88,11 @@ namespace primerasPruebasConC
 
         public void Heal(int amount)
         {
+            if (amount <= 0)
+            {
+                return; //La curacion debe ser mayor que 0.
+            }
+
             CurrentHitPoints += amount;
             if (CurrentHitPoints > MaxHitPoints)
             {
@@ -70,6 +104,11 @@ namespace primerasPruebasConC
 
         public void ReceiveDamage(int damage)
         {
+            if (damage <= 0)
+            {
+                return;
+            }
+
             CurrentHitPoints -= damage;
             if (CurrentHitPoints < 0)
             {
@@ -79,14 +118,110 @@ namespace primerasPruebasConC
             Console.WriteLine($"{Name} recibe {damage} puntos de daño. Puntos de vida actuales: {CurrentHitPoints}");
         }
 
+
         public void AddItem(IItem item)
         {
-            _inventory.Add(item);
+            if (item != null)
+            {
+                _inventory.Add(item);
+                Console.WriteLine($"{item.GetType().Name} ha sido añadido al inventario de {Name}.");
+            }
         }
 
-        public void ApplyItem(IItem item)
+        public void RemoveItem(IItem item)
         {
-            item.Apply(this);
+            if (_inventory.Remove(item))
+            {
+                Console.WriteLine($"{item.GetType().Name} ha sido eliminado del inventario de {Name}.");
+            }
+            else
+            {
+                Console.WriteLine($"{item.GetType().Name} no se encuentra en el inventario de {Name}.");
+            }
+        }
+
+        public void ListInventory()
+        {
+            if (_inventory.Count == 0)
+            {
+                Console.WriteLine($"{Name} no tiene ítems en su inventario.");
+            }
+            else
+            {
+                Console.WriteLine($"{Name} tiene los siguientes ítems en su inventario:");
+                foreach (var item in _inventory)
+                {
+                    Console.WriteLine($"- {item.GetType().Name}");
+                }
+            }
+        }
+
+
+        public void ApplyItem(IItem item) => item.Apply(this);
+
+
+        public void AddMinion(SupportingCharacters minion)
+        {
+            if (minion != null)
+            {
+                _minions.Add(minion);
+                Console.WriteLine($"{Name} ha invocado un nuevo minion: {minion.Name}");
+            }
+        }
+
+        public void AttackWithMinions()
+        {
+            if (_minions.Count == 0)
+            {
+                Console.WriteLine($"{Name} no tiene minions para atacar.");
+                return;
+            }
+
+            foreach (var minion in _minions)
+            {
+                //Se crea una instancia del delegate MinionsAttackDelegate y se asigna el metodo para atacar.
+                //El delegate apunta ahora al metodo Atack
+                MinionDelegate attackDelegate = minion.Atack;
+                int damage =
+                    attackDelegate
+                        .Invoke(); //Esto significa la invocacion del delegate, lo que ejecuta el metodo y devuelve el dano que causa
+                Console.WriteLine($"{minion.Name} ataca y causa {damage} de daño.");
+            }
+        }
+
+        public void DamageMinion(SupportingCharacters minion, int damage)
+        {
+            if (_minions.Contains(minion))
+            {
+                int remainingLife = minion.ReceiveAttack(damage);
+                Console.WriteLine($"{minion.Name} recibe {damage} puntos de daño. Vida restante: {remainingLife}");
+            }
+            else
+            {
+                Console.WriteLine($"{minion.Name} no está en la lista de minions.");
+            }
+        }
+
+        public void ListMinions()
+        {
+            if (_minions.Count == 0)
+            {
+                Console.WriteLine($"{Name} no tiene minions.");
+            }
+            else
+            {
+                Console.WriteLine($"{Name} Tiene los siguientes minions:");
+                foreach (var minion in _minions)
+                {
+                    Console.WriteLine($"- {minion.GetType().Name}");
+                }
+            }
+        }
+
+        public override string ToString()
+        {
+            return
+                $"Personaje: {Name}\n HP: {CurrentHitPoints}/{MaxHitPoints} \n Daño: {BaseDamage}\n Armadura: {BaseArmour}";
         }
     }
 }
